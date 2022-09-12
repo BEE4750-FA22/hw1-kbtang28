@@ -1,6 +1,6 @@
 ---
 title: "BEE 4750/5750 Homework 1"
-author: "Your name here (your netID here)"
+author: "Katerina Tang (kbt28)"
 date: `j import Dates; Dates.Date(Dates.now())`
 weave_options:
     term: true
@@ -26,34 +26,49 @@ Pkg.instantiate()
 ```julia
 using GraphRecipes, Plots
 
-A = [0 1 1 1;
-		 0 0 0 1;
-		 0 0 0 1;
-   	 	 0 0 0 0]
+A = [0 0 0 0 1 1 1 0 0
+     0 0 0 0 0 0 0 1 0
+     0 0 0 0 0 0 0 0 1
+     0 0 0 0 0 0 0 0 0
+     0 1 0 0 0 0 0 0 0
+     0 0 1 0 0 0 0 0 0
+     0 0 0 1 0 0 0 0 0
+     0 0 0 1 0 0 0 0 0
+     0 0 0 1 0 0 0 0 0];
 	
-names = ["Plant", "Land Treatment", "Chem Treatment", "Pristine Brook"]
-shapes=[:hexagon, :rect, :rect, :hexagon]
-xpos = [0, -1, -0.25, 1]
-ypos = [1, 0, 0, -1]
+names = ["CPP plant", "Land treatment", "Chem treatment", "Pristine Brook", "X1", "X2", "100-X1-X2", "0.2X1", "0.005X2*X2"];
+shapes=[:hexagon, :rect, :rect, :hexagon, :rect, :rect, :rect, :rect, :rect];
+xpos = [0, -1, 0, 1, -0.5, 0, 0.5, -0.7, 0.25];
+ypos = [1, 0, 0, -1, 0.5, 0.5, 0.5, -0.5, -0.5];
 
-graphplot(A, names=names, markersize=0.15, markershapes=shapes, markercolor=:white, x=xpos, y=ypos)
+graphplot(A, names=names, markersize=0.25, markershapes=shapes, markercolor=:white, x=xpos, y=ypos)
 ```
+The diagram above shows the three possible treatment options for the $100\text{ m}^3$ of wastewater released by CPP each day. 
+$X_1$ and $X_2$ denote the amount ($\text{m}^3$) of wastewater sent to land and chemical treatment, respectively, each day.
+Since land treatment removes 80% of YUK in the wastewater,
+```math
+(X_1\text{ m}^3/\text{d})(1\text{ kg/m}^3)(0.2)=0.2X_1\text{ kg/d}
+``` 
+of YUK will enter Pristine Brook after land treatment.
+Similarly, since the efficiency of chemical treatment is $1-0.005X_2,$
+```math
+(X_2\text{ m}^3/\text{d})(1\text{ kg/m}^3)(0.005X_2)=0.005(X_2)^2\text{ kg/d}
+```
+of YUK will enter Pristine Brook after chemical treatment.
+The $100-X_1-X_2\text{ m}^3$ of wastewater not treated each day goes directly into Pristine Brook, which means that
+```math
+(100-X_1-X_2\text{ m}^3/\text{d})(1\text{ kg}/\text{m}^3)=100-X_1-X_2\text{ kg/d}
+```
+of YUK enters Pristine Brook via untreated wastewater.
 
 ## Problem 1.2
-CPP releases YUK at a rate of $(100\text{ m}^3/d)*(1\text{ kg/m}^3)=1\text{ kg/d}.$
-There is
+CPP releases YUK at a rate of $(100\text{ m}^3/\text{d})*(1\text{ kg/m}^3)=100\text{ kg/d}.$
+From this and the calculations above, we can conclude that the total mass $M$ of YUK being discharged into Pristine Brook is
 ```math
-(X_1\text{ m}^3/d)(1\text{ kg/m}^3)(0.8)=0.8X_1\text{ kg/d}
-``` 
-of YUK removed by land treatment.
-There is
-```math
-(X_2\text{ m}^3/d)(1\text{ kg/m}^3)(1-0.005X_2)=(1-0.005X_2)X_2\text{ kg/d}
-```
-of YUK removed by chemical treatment.
-Thus, the total mass $M$ of YUK being discharged into Pristine Brook is
-```math
-M(X_1, X_2) = 100-0.8X_1-(1-0.005X_2)X_2\text{ kg/d}.
+\begin{align*}
+M(X_1, X_2) &= 100-X_1-X_2+0.2X_2+0.005(X_2)^2\text{ kg/d} \\
+&= 100-0.8X_1-X_2+0.005(X_2)^2\text{ kg/d}.
+\end{align*}
 ```
 
 We're given that the land treatment method costs $X_1^2/20$ dollars per day and the chemical treatment method costs $1.50X_2$ dollars per day.
@@ -62,12 +77,71 @@ Thus, the cost $C$ of any treatment plan is
 C(X_1,X_2) = X_1^2/20 + 1.50X_2\text{ dollars}.
 ```
 
+Note that since CPP produces $100\text{ m}^3/\text{d}$ of wastewater, we must have $X_1+X_2\leq 100.$
+
+The three equations defining our model are therefore
+```math
+\begin{align*}
+& M(X_1, X_2) = 100-0.8X_1-(1-0.005X_2)X_2\text{ kg/d}\\
+& C(X_1,X_2) = X_1^2/20 + 1.50X_2\text{ dollars}\\
+& X_1+X_2 \leq 100
+\end{align*}
+```
+
 ## Problem 1.3
+The following function computes the amount of YUK entering Pristine Brook and the cost of treatment given $X_1$ and $X_2.$
+```julia
+function yuk_treatment(X1, X2)
+    mass = 100 - 0.8*X1 - (1-0.005*X2)*X2
+    cost = X1^2/20 + 1.5*X2
+
+    return mass, cost
+end
+```
 
 ## Problem 1.4
+We'll sample 2,000 treatment plans to see the tradeoffs between the amount of YUK entering Pristine Brook and the cost of treatment. 
+To account for our constraint that $X_1+X_2\leq 100,$ we'll sample from a joint distribution, more specifically, the Dirichlet distribution with parameters $\alpha_1=\alpha_2=\alpha_3=1.$
+(This choice of parameters just means that the distribution is uniform over all the points in its support.)
+```julia
+using Distributions
+
+n_treatment_samples = 2000
+treatment_samples = rand(Dirichlet(ones(3)), n_treatment_samples) .* 100 # scale up to reflect 100 m^3/d of wastewater
+treatment_output = yuk_treatment.(treatment_samples[1, :], treatment_samples[2, :])
+
+mass = [o[1] for o in treatment_output]
+cost = [o[2] for o in treatment_output]
+
+scatter(mass, cost, xlabel="YUK discharge (kg/day)", ylabel="Treatment cost (\$\$)", legend=false, grid=false);
+vline!([20], color=:red)
+```
+
+As expected after the in-class exercise, we see a tradeoff between treatment cost and the amount of YUK discharged into Pristine Brook;
+treating wastewater so that the amount of YUK being discharged is in compliance with the standard will cost more.
 
 ## Problem 1.5
+We can filter our treatment plans to identify those which keep us in compliance with the standard.
+```julia
+treatment_comply = treatment_samples[:, mass .< 20.0]
+scatter(treatment_comply[1, :], treatment_comply[2, :], xlabel="X_1 (m^3/d)", ylabel="X_2 (m^3/d)", label=false, grid=false)
+```
 
+We can highlight which treatment plans result in the least amount of YUK discharge and in the lowest cost.
+(Because there is a tradeoff between minimizing YUK discharge and minimizing cost, these won't be the same treatment plan, sadly.)
+```julia
+min_mass, min_mass_idx = findmin(mass[mass .< 20.0])
+min_mass_treatment = treatment_comply[:, min_mass_idx]
+
+min_cost, min_cost_idx = findmin(cost[mass .< 20.0])
+min_cost_treatment = treatment_comply[:, min_cost_idx]
+
+scatter!([min_mass_treatment[1]], [min_mass_treatment[2]], label="Minimum discharge");
+scatter!([min_cost_treatment[1]], [min_cost_treatment[2]], label="Minimum cost")
+```
+
+If I were the owner of CPP and concerned with the company's profit margins, I'd probably choose the plan that minimizes the cost of treatment, even though the amount of YUK discharged into Pristine Brook is very close to violating the standard.
+If I were more concerned with the health of Pristine Brook, on the other hand, I'd probably choose the plan that minimizes the amount of YUK discharged into Pristine Brook.
 ## Problem 1.6
 
 ## Problem 1.7
