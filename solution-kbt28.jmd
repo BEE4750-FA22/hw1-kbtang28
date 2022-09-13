@@ -108,10 +108,10 @@ using Distributions
 
 n_treatment_samples = 2000
 treatment_samples = rand(Dirichlet(ones(3)), n_treatment_samples) .* 100 # scale up to reflect 100 m^3/d of wastewater
-treatment_output = yuk_treatment.(treatment_samples[1, :], treatment_samples[2, :])
+treatment_output = yuk_treatment.(treatment_samples[1, :], treatment_samples[2, :]);
 
-mass = [o[1] for o in treatment_output]
-cost = [o[2] for o in treatment_output]
+mass = [o[1] for o in treatment_output];
+cost = [o[2] for o in treatment_output];
 
 scatter(mass, cost, xlabel="YUK discharge (kg/day)", ylabel="Treatment cost (\$\$)", legend=false, grid=false);
 vline!([20], color=:red)
@@ -130,20 +130,31 @@ scatter(treatment_comply[1, :], treatment_comply[2, :], xlabel="X_1 (m^3/d)", yl
 We can highlight which treatment plans result in the least amount of YUK discharge and in the lowest cost.
 (Because there is a tradeoff between minimizing YUK discharge and minimizing cost, these won't be the same treatment plan, sadly.)
 ```julia
-min_mass, min_mass_idx = findmin(mass[mass .< 20.0])
-min_mass_treatment = treatment_comply[:, min_mass_idx]
-
 min_cost, min_cost_idx = findmin(cost[mass .< 20.0])
 min_cost_treatment = treatment_comply[:, min_cost_idx]
+
+min_mass, min_mass_idx = findmin(mass[mass .< 20.0])
+min_mass_treatment = treatment_comply[:, min_mass_idx]
 
 scatter!([min_mass_treatment[1]], [min_mass_treatment[2]], label="Minimum discharge");
 scatter!([min_cost_treatment[1]], [min_cost_treatment[2]], label="Minimum cost")
 ```
 
 If I were the owner of CPP and concerned with the company's profit margins, I'd probably choose the plan that minimizes the cost of treatment, even though the amount of YUK discharged into Pristine Brook is very close to violating the standard.
-If I were more concerned with the health of Pristine Brook, on the other hand, I'd probably choose the plan that minimizes the amount of YUK discharged into Pristine Brook.
+That is, I'd choose $$X_1=$`j round(min_cost_treatment[1], digits=2)`$\text{ m}^3/\text{d}$ and $$X_2=$`j round(min_cost_treatment[2], digits=2)`$\text{ m}^3/\text{d}$. 
+The amount of YUK discharged each day under this plan should be `j round(yuk_treatment(min_cost_treatment[1], min_cost_treatment[2])[1], digits=2)` kg.
+If I were more concerned with the health of Pristine Brook---if I were the regulatory agency or a member of the public who depended on Pristine Brook for drinking water, say---I'd probably choose the plan that minimizes the amount of YUK discharged into Pristine Brook, even if the treatment is more expensive.
+That is, I'd choose $$X_1=$$`j round(min_mass_treatment[1], digits=2)`$\text{ m}^3/\text{d}$ and $$X_2=$$`j round(min_mass_treatment[2], digits=2)`$\text{ m}^3/\text{d}$.
+The amount of YUK discharged each day under this plan should be `j round(yuk_treatment(min_mass_treatment[1], min_mass_treatment[2])[1], digits=2)` kg.
+Of course, we could also select a Goldilocks plan that tries to balance the two competing objectives.
+
+We haven't taken any uncertainty surrounding the discharge of YUK into account. For example, what if there are small fluctuations in the amount of wastewater CPP releases or the concentration of YUK in CPP's wastewater each day?
+Since the amount of YUK discharged each day in the cost-minimizing plan is very close to violating the standard, we may want to use a more expensive treatment plan that removes more YUK to ensure we don't discharge too much YUK if CPP happens to release a little more wastewater or the wastewater has a higher concentration of YUK for some reason.
+Of course, depending on what the punishment for discharging too much YUK is, CPP might decide it's more profitable to choose the cost-minimizing plan and just suffer the consequences if they occasionally violate the standard.
+These dynamics and tradeoffs aren't captured in the numerical experiment we set up, but they might change our conclusions about the best plan.
+
 ## Problem 1.6
 
-## Problem 1.7
 
 # References
+I referenced Vivek's solution to the in-class wastewater treatment simulation exercise when writing code for this assignment.
