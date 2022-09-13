@@ -24,7 +24,6 @@ scatter(mass, cost, xlabel="YUK discharge (kg/day)", ylabel="Treatment cost (\$\
 vline!([20], color=:red)
 
 treatment_comply = treatment_samples[:, mass .< 20.0]
-scatter(treatment_comply[1, :], treatment_comply[2, :], xlabel="X1 (m^3/d)", ylabel="X2 (m^3/day)", legend=false, grid=false)
 
 findmin(mass[mass .< 20.0])
 min_mass_treatment = treatment_comply[:, 17]
@@ -33,11 +32,6 @@ min_mass_output = yuk_treatment(min_mass_treatment[1], min_mass_treatment[2])
 findmin(cost[mass .< 20.0])
 min_cost_treatment = treatment_comply[:, 12]
 min_cost_output = yuk_treatment(min_cost_treatment[1], min_cost_treatment[2])
-
-scatter(mass, cost, xlabel="YUK discharge (kg/day)", ylabel="Treatment cost (\$\$)", label=false, grid=false)
-scatter!([min_mass_output[1]], [min_mass_output[2]], label="Minimum discharge")
-scatter!([min_cost_output[1]], [min_cost_output[2]], label="Minimum cost")
-vline!([20], color=:red)
 
 scatter(treatment_comply[1, :], treatment_comply[2, :], xlabel="X1 (m^3/d)", ylabel="X2 (m^3/day)", label=false, grid=false)
 scatter!([min_mass_treatment[1]], [min_mass_treatment[2]], label="Minimum discharge")
